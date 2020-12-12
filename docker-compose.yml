@@ -1,0 +1,68 @@
+
+version: '3'
+
+services:
+  php:
+    container_name: php
+    environment:
+      TZ: 'Asia/Tokyo'
+    build: ./php
+    volumes:
+    - /var/www
+    networks:
+      - container-link
+
+  nginx:
+    container_name: nginx
+    environment:
+      TZ: 'Asia/Tokyo'
+    build: ./nginx
+    ports:
+    - 80:80
+    volumes_from:
+      - php
+    depends_on:
+    - php
+    networks:
+      - container-link
+
+  db:
+    image: mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user
+      TZ: 'Asia/Tokyo'
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+    - /var/lib/mysql
+    - /etc/mysql/conf.d
+    - /docker-entrypoint-initdb.d
+    networks:
+      - container-link
+    ports:
+    - 3306:3306
+
+  vue:
+    container_name: vue
+    environment:
+      TZ: 'Asia/Tokyo'
+    build: ./vue
+    tty: true
+    networks:
+      - container-link
+    ports:
+    - 8080:8080
+    
+networks:
+  # docker-composeで勝手にデフォルトネットワークが生成される予防。（自動で全コンテナが所属するbridgeを指定）
+  default:
+    external:
+      name: bridge
+  # コンテナ間通信用のネットワークセグメント
+  container-link:
+    # これが作成されるネットワーク名（同名がなければ自動生成される）
+    name: my-local-network
+    driver: bridge
